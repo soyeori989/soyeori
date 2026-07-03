@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<title>소여리 노란집 예약</title>
+<style>
+  :root{
+    --bg: #FBF2DC;
+    --bg-alt: #F3E4B8;
+    --primary: #E2A22E;
+    --primary-dark: #B87A16;
+    --accent: #2F4B3C;
+    --accent-light: #416253;
+    --ink: #2B2620;
+    --muted: #8A7A5C;
+    --danger: #AE4527;
+    --card: #FFFCF4;
+    --line: #E7D6A6;
+    --radius: 16px;
+    --shadow: 0 6px 20px rgba(43,38,32,0.10);
+  }
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink);
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    -webkit-text-size-adjust:100%;
+  }
+  #root{ min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding: max(20px, env(safe-area-inset-top)) 14px calc(80px + env(safe-area-inset-bottom)); }
+
+  .wrap{ width:100%; max-width:440px; }
+
+  .brand{ display:flex; flex-direction:column; align-items:center; margin-bottom: 18px; }
+  .roofline{ width:110px; height:40px; margin-bottom:6px; }
+  .brand h1{ font-size:21px; font-weight:800; letter-spacing:-0.02em; margin:0; }
+  .brand p{ font-size:12px; color:var(--muted); margin:4px 0 0; letter-spacing:0.01em; text-align:center; }
+
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 16px; width:100%; }
+
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; font-weight:700; color:var(--accent); margin-bottom:6px; }
+  .field input{
+    width:100%; padding:13px; font-size:16px; border-radius:10px;
+    border:1.5px solid var(--line); background:#fff; color:var(--ink); outline:none;
+    font-family:inherit; -webkit-appearance:none; appearance:none;
+  }
+  .field input:focus{ border-color:var(--primary); }
+  .field .hint{ font-size:11.5px; color:var(--muted); margin-top:4px; }
+
+  .btn{
+    width:100%; padding:14px; border:none; border-radius:10px; font-size:15px; font-weight:700;
+    cursor:pointer; font-family:inherit; -webkit-appearance:none; appearance:none;
+  }
+  .btn-primary{ background:var(--primary); color:#3A2A05; }
+  .btn-outline{ background:transparent; color:var(--accent); border:1.5px solid var(--accent); }
+  .btn-danger{ background:transparent; color:var(--danger); border:1.5px solid var(--danger); }
+  .btn:disabled{ opacity:.45; }
+
+  .error-msg{ background:#FBE7DD; color:var(--danger); font-size:12.5px; padding:9px 11px; border-radius:8px; margin-bottom:12px; }
+  .ok-msg{ background:#E7EFE4; color:var(--accent); font-size:12.5px; padding:9px 11px; border-radius:8px; margin-bottom:12px; }
+  .warn-box{ background:#FBE7DD; color:var(--danger); font-size:12.5px; padding:12px 14px; border-radius:10px; margin-bottom:14px; line-height:1.5; }
+
+  .app-header{ display:flex; justify-content:space-between; align-items:flex-start; width:100%; margin-bottom:14px; }
+  .user-chip{ font-size:12px; color:var(--accent); background:var(--bg-alt); padding:6px 11px; border-radius:20px; font-weight:600; white-space:nowrap; }
+  .logout-link{ font-size:11.5px; color:var(--muted); text-decoration:underline; cursor:pointer; background:none; border:none; font-family:inherit; margin-top:6px; }
+
+  .cal-nav{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .cal-nav button{ background:var(--bg-alt); border:none; font-size:18px; color:var(--accent); cursor:pointer; padding:8px 14px; border-radius:8px; }
+  .cal-nav .ym{ font-size:16px; font-weight:800; letter-spacing:-0.01em; }
+
+  .range-hint{ font-size:12px; color:var(--accent); background:var(--bg-alt); padding:9px 11px; border-radius:8px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .range-hint button{ background:none; border:none; color:var(--muted); text-decoration:underline; font-size:11.5px; cursor:pointer; font-family:inherit; white-space:nowrap; }
+
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-dow{ text-align:center; font-size:10.5px; color:var(--muted); font-weight:700; padding-bottom:4px; }
+  .cal-cell{
+    aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-radius:9px; font-size:13px; position:relative; cursor:pointer; background:var(--bg-alt);
+    border:1.5px solid transparent; font-variant-numeric: tabular-nums; -webkit-user-select:none; user-select:none;
+  }
+  .cal-cell.empty{ visibility:hidden; cursor:default; }
+  .cal-cell.past{ color:#C9BA98; cursor:not-allowed; background:transparent; }
+  .cal-cell.available:active{ border-color:var(--primary); }
+  .cal-cell.today{ box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .cal-cell.booked{ background:var(--accent); color:#F3E4B8; cursor:pointer; }
+  .cal-cell.sel-edge{ background:var(--primary); color:#3A2A05; font-weight:800; }
+  .cal-cell.sel-range{ background:#F6E4B7; border-color:var(--primary); }
+  .cal-cell .stamp{ font-size:8px; font-weight:800; letter-spacing:0.02em; margin-top:1px; }
+
+  .legend{ display:flex; gap:12px; margin-top:14px; font-size:11px; color:var(--muted); align-items:center; flex-wrap:wrap; }
+  .legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .dot{ width:9px; height:9px; border-radius:3px; display:inline-block; }
+  .dot.avail{ background:var(--bg-alt); border:1px solid var(--line); }
+  .dot.book{ background:var(--accent); }
+  .dot.sel{ background:var(--primary); }
+
+  .float-bar{
+    position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:var(--card); border-top:1px solid var(--line); box-shadow:0 -6px 16px rgba(0,0,0,0.08);
+    display:flex; align-items:center; gap:12px; z-index:40;
+  }
+  .float-bar .info{ flex:1; font-size:13px; }
+  .float-bar .info b{ display:block; font-size:14px; color:var(--accent); }
+  .float-bar button.book-now{ flex-shrink:0; width:auto; padding:12px 20px; }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(43,38,32,0.45); display:flex; align-items:flex-end;
+    justify-content:center; z-index:50;
+  }
+  .modal{
+    background:var(--card); width:100%; max-width:440px; border-radius:20px 20px 0 0; padding:22px 18px calc(24px + env(safe-area-inset-bottom));
+    box-shadow:0 -8px 30px rgba(0,0,0,0.2); max-height:88vh; overflow-y:auto;
+  }
+  .modal h2{ font-size:17px; font-weight:800; margin:0 0 4px; }
+  .modal .date-sub{ font-size:12.5px; color:var(--muted); margin-bottom:16px; }
+  .modal-close{ float:right; background:none; border:none; font-size:22px; color:var(--muted); cursor:pointer; line-height:1; padding:4px; }
+  .row2{ display:flex; gap:10px; }
+  .row2 .field{ flex:1; }
+
+  .detail-line{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .detail-line b{ color:var(--accent); }
+
+  .footer-links{ margin-top:20px; font-size:11px; color:var(--muted); text-align:center; }
+
+  .spinner-wrap{ display:flex; justify-content:center; padding:50px 0; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+(function(){
+  const { useState, useEffect, useMemo, useCallback } = React;
+
+  // ============================================================
+  // 설정: 아래 두 값을 채워야 예약이 실제로 저장/알림됩니다.
+  // ============================================================
+  const CONFIG = {
+    // Apps Script 배포 후 발급받은 웹 앱 URL을 붙여넣으세요.
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyZVbv32RCKmUmrHDmkbeNyFgGR3C1wn5qs2hyeJS-WsK7T8YkbyQSnP_Az3Y8tg_D2Dg/exec',
+    // (선택) Make/Zapier/n8n 웹훅 주소. 예약/취소 시 이 주소로 알림을 보냅니다.
+    ADMIN_WEBHOOK_URL: ''
+  };
+  // ============================================================
+
+  function simpleHash(str){
+    let hash = 5381;
+    for (let i=0;i<str.length;i++){ hash = ((hash*33) ^ str.charCodeAt(i)) >>> 0; }
+    return hash.toString(36);
+  }
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
+  function todayKey(){ const t=new Date(); return dateKey(t.getFullYear(), t.getMonth(), t.getDate()); }
+  function addDays(key, n){
+    const [y,m,d] = key.split('-').map(Number);
+    const dt = new Date(y, m-1, d+n);
+    return dateKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  }
+  function nightsBetween(a,b){
+    const [ay,am,ad]=a.split('-').map(Number), [by,bm,bd]=b.split('-').map(Number);
+    const d1=new Date(ay,am-1,ad), d2=new Date(by,bm-1,bd);
+    return Math.round((d2-d1)/86400000);
+  }
+
+  async function apiGet(){
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, { method:'GET' });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '예약 정보를 불러오지 못했어요.');
+    return data.bookings || [];
+  }
+  async function apiPost(payload){
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method:'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // preflight 회피
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    return data;
+  }
+  function sendWebhook(payload){
+    if (!CONFIG.ADMIN_WEBHOOK_URL) return;
+    fetch(CONFIG.ADMIN_WEBHOOK_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    }).catch(()=>{});
+  }
+
+  function Roofline(){
+    return React.createElement('svg', {className:'roofline', viewBox:'0 0 120 44', xmlns:'http://www.w3.org/2000/svg'},
+      React.createElement('polygon', {points:'10,44 30,14 50,44', fill:'#E2A22E'}),
+      React.createElement('rect', {x:'20', y:'30', width:'20', height:'14', fill:'#2F4B3C'}),
+      React.createElement('polygon', {points:'42,44 60,8 78,44', fill:'#2F4B3C'}),
+      React.createElement('rect', {x:'52', y:'26', width:'16', height:'18', fill:'#E2A22E'}),
+      React.createElement('polygon', {points:'70,44 90,14 110,44', fill:'#E2A22E'}),
+      React.createElement('rect', {x:'80', y:'30', width:'20', height:'14', fill:'#2F4B3C'})
+    );
+  }
+
+  function App(){
+    const configMissing = !CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL.indexOf('YOUR_APPS_SCRIPT') === 0;
+    const [user, setUser] = useState(null);
+
+    if (configMissing) {
+      return React.createElement('div', {className:'wrap'},
+        React.createElement('div', {className:'brand'}, React.createElement(Roofline,null), React.createElement('h1',null,'소여리 노란집')),
+        React.createElement('div', {className:'card'},
+          React.createElement('div', {className:'warn-box'},
+            '아직 예약 서버 설정이 끝나지 않았어요. 관리자는 apps-script-backend.gs 파일을 구글 시트에 연결하고, 발급받은 웹 앱 주소를 이 페이지 파일 상단 CONFIG.APPS_SCRIPT_URL 에 붙여넣어 주세요.'
+          )
+        )
+      );
+    }
+
+    if (!user) return React.createElement(LoginScreen, { onLogin: setUser });
+    return React.createElement(MainScreen, { user, setUser });
+  }
+
+  function LoginScreen({ onLogin }){
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [err, setErr] = useState('');
+
+    function submit(e){
+      e.preventDefault();
+      const n = name.trim(), p = phone.trim();
+      if (!n) { setErr('이름을 입력해 주세요.'); return; }
+      if (!/^0\d{1,2}-?\d{3,4}-?\d{4}$/.test(p)) { setErr('전화번호 형식을 확인해 주세요. (예: 010-1234-5678)'); return; }
+      onLogin({ name:n, phone:p });
+    }
+
+    return React.createElement('div', {className:'wrap'},
+      React.createElement('div', {className:'brand'},
+        React.createElement(Roofline, null),
+        React.createElement('h1', null, '소여리 노란집'),
+        React.createElement('p', null, '예약하려면 이름과 전화번호를 입력하세요')
+      ),
+      React.createElement('div', {className:'card'},
+        err && React.createElement('div', {className:'error-msg'}, err),
+        React.createElement('form', {onSubmit: submit},
+          React.createElement('div', {className:'field'},
+            React.createElement('label', null, '이름 (실명)'),
+            React.createElement('input', {type:'text', value:name, onChange:e=>setName(e.target.value), placeholder:'홍길동'})
+          ),
+          React.createElement('div', {className:'field'},
+            React.createElement('label', null, '전화번호'),
+            React.createElement('input', {type:'tel', inputMode:'numeric', value:phone, onChange:e=>setPhone(e.target.value), placeholder:'010-1234-5678'})
+          ),
+          React.createElement('button', {className:'btn btn-primary', type:'submit'}, '입장하기')
+        )
+      )
+    );
+  }
+
+  function MainScreen({ user, setUser }){
+    const [loading, setLoading] = useState(true);
+    const [loadErr, setLoadErr] = useState('');
+    const [bookings, setBookings] = useState([]);
+    const [viewYear, setViewYear] = useState(new Date().getFullYear());
+    const [viewMonth, setViewMonth] = useState(new Date().getMonth());
+    const [selCheckIn, setSelCheckIn] = useState(null);
+    const [selCheckOut, setSelCheckOut] = useState(null);
+    const [modal, setModal] = useState(null);
+    const [toast, setToast] = useState(null);
+
+    const loadBookings = useCallback(async () => {
+      setLoading(true); setLoadErr('');
+      try {
+        const list = await apiGet();
+        setBookings(list);
+      } catch(e) {
+        setLoadErr('예약 정보를 불러오지 못했어요. 네트워크 상태를 확인하고 다시 시도해 주세요.');
+      }
+      setLoading(false);
+    }, []);
+
+    useEffect(() => { loadBookings(); }, [loadBookings]);
+
+    useEffect(() => {
+      if (!toast) return;
+      const t = setTimeout(() => setToast(null), 3200);
+      return () => clearTimeout(t);
+    }, [toast]);
+
+    const tKey = todayKey();
+
+    const isOccupied = useCallback((key) => {
+      return bookings.some(b => key >= b.checkIn && key < b.checkOut);
+    }, [bookings]);
+
+    const findBooking = useCallback((key) => {
+      return bookings.find(b => key >= b.checkIn && key < b.checkOut) || null;
+    }, [bookings]);
+
+    function rangeHasOccupied(inKey, outKey){
+      let cur = inKey;
+      while (cur < outKey) {
+        if (isOccupied(cur)) return true;
+        cur = addDays(cur, 1);
+      }
+      return false;
+    }
+
+    function changeMonth(delta){
+      let m = viewMonth + delta, y = viewYear;
+      if (m < 0) { m = 11; y -= 1; }
+      if (m > 11) { m = 0; y += 1; }
+      setViewMonth(m); setViewYear(y);
+    }
+
+    const grid = useMemo(() => {
+      const first = new Date(viewYear, viewMonth, 1);
+      const startDow = first.getDay();
+      const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+      const cells = [];
+      for (let i=0;i<startDow;i++) cells.push(null);
+      for (let d=1; d<=daysInMonth; d++) cells.push(d);
+      return cells;
+    }, [viewYear, viewMonth]);
+
+    function resetSelection(){ setSelCheckIn(null); setSelCheckOut(null); }
+
+    function onCellClick(key){
+      if (key < tKey) return;
+      if (isOccupied(key)) {
+        setModal({ type:'detail', dateKey:key });
+        return;
+      }
+      if (!selCheckIn || (selCheckIn && selCheckOut)) {
+        setSelCheckIn(key); setSelCheckOut(null);
+        return;
+      }
+      // selCheckIn 있고 selCheckOut 없음
+      if (key === selCheckIn) { resetSelection(); return; }
+      if (key < selCheckIn) { setSelCheckIn(key); return; }
+      if (rangeHasOccupied(selCheckIn, key)) {
+        setToast({type:'error', msg:'선택하신 기간 중에 이미 예약된 날짜가 있어요.'});
+        return;
+      }
+      setSelCheckOut(key);
+    }
+
+    async function submitBooking({ guests, password }){
+      const payload = {
+        action:'book', checkIn: selCheckIn, checkOut: selCheckOut,
+        name: user.name, phone: user.phone, guests,
+        passwordHash: simpleHash(password)
+      };
+      const result = await apiPost(payload);
+      if (!result.ok) {
+        setToast({type:'error', msg: result.error || '예약에 실패했어요. 다시 시도해 주세요.'});
+        await loadBookings();
+        return false;
+      }
+      sendWebhook({ type:'예약', checkIn:selCheckIn, checkOut:selCheckOut, name:user.name, phone:user.phone, guests });
+      setToast({type:'ok', msg:`${selCheckIn} ~ ${selCheckOut} 예약이 완료되었어요.`});
+      resetSelection();
+      await loadBookings();
+      return true;
+    }
+
+    async function submitCancel(booking, password){
+      const result = await apiPost({ action:'cancel', id: booking.id, passwordHash: simpleHash(password) });
+      if (!result.ok) return result.error || '취소에 실패했어요.';
+      sendWebhook({ type:'취소', checkIn:booking.checkIn, checkOut:booking.checkOut, name:booking.name, phone:booking.phone });
+      setToast({type:'ok', msg:'예약이 취소되었어요.'});
+      await loadBookings();
+      return null;
+    }
+
+    return React.createElement('div', {className:'wrap'},
+      React.createElement('div', {className:'app-header'},
+        React.createElement('div', {className:'brand', style:{alignItems:'flex-start'}},
+          React.createElement(Roofline, null),
+          React.createElement('h1', null, '소여리 노란집')
+        ),
+        React.createElement('div', {style:{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4}},
+          React.createElement('span', {className:'user-chip'}, user.name + '님'),
+          React.createElement('button', {className:'logout-link', onClick:()=>setUser(null)}, '나가기')
+        )
+      ),
+      toast && React.createElement('div', {className: toast.type==='error' ? 'error-msg' : 'ok-msg'}, toast.msg),
+      loadErr && React.createElement('div', {className:'error-msg'},
+        loadErr, ' ',
+        React.createElement('button', {onClick:loadBookings, style:{textDecoration:'underline', background:'none', border:'none', color:'inherit', cursor:'pointer'}}, '다시 시도')
+      ),
+      React.createElement('div', {className:'card'},
+        loading ? React.createElement('div', {className:'spinner-wrap'}, '불러오는 중…') :
+        React.createElement(React.Fragment, null,
+          React.createElement('div', {className:'cal-nav'},
+            React.createElement('button', {onClick:()=>changeMonth(-1)}, '‹'),
+            React.createElement('div', {className:'ym'}, `${viewYear}년 ${viewMonth+1}월`),
+            React.createElement('button', {onClick:()=>changeMonth(1)}, '›')
+          ),
+          React.createElement('div', {className:'range-hint'},
+            React.createElement('span', null,
+              !selCheckIn ? '입실 날짜를 선택하세요' :
+              !selCheckOut ? `입실: ${selCheckIn} · 퇴실 날짜를 선택하세요` :
+              `입실 ${selCheckIn} → 퇴실 ${selCheckOut} (${nightsBetween(selCheckIn, selCheckOut)}박)`
+            ),
+            selCheckIn && React.createElement('button', {onClick:resetSelection}, '초기화')
+          ),
+          React.createElement('div', {className:'cal-grid'},
+            ['일','월','화','수','목','금','토'].map(d => React.createElement('div', {className:'cal-dow', key:'dow'+d}, d)),
+            grid.map((d, idx) => {
+              if (!d) return React.createElement('div', {className:'cal-cell empty', key:'empty'+idx});
+              const key = dateKey(viewYear, viewMonth, d);
+              const isPast = key < tKey;
+              const isToday = key === tKey;
+              const booked = isOccupied(key);
+              const isEdge = key === selCheckIn || key === selCheckOut;
+              const inRange = selCheckIn && selCheckOut && key > selCheckIn && key < selCheckOut;
+              let cls = 'cal-cell ';
+              if (isPast) cls += 'past';
+              else if (booked) cls += 'booked';
+              else if (isEdge) cls += 'sel-edge';
+              else if (inRange) cls += 'sel-range';
+              else cls += 'available';
+              if (isToday) cls += ' today';
+              return React.createElement('div', {
+                className: cls, key:key, onClick: () => !isPast && onCellClick(key)
+              },
+                React.createElement('span', null, d),
+                booked && React.createElement('span', {className:'stamp'}, '예약완료')
+              );
+            })
+          ),
+          React.createElement('div', {className:'legend'},
+            React.createElement('span', null, React.createElement('span',{className:'dot avail'}), '예약 가능'),
+            React.createElement('span', null, React.createElement('span',{className:'dot sel'}), '선택됨'),
+            React.createElement('span', null, React.createElement('span',{className:'dot book'}), '예약 완료')
+          )
+        )
+      ),
+      React.createElement('div', {className:'footer-links'}, '입실일에 체크인, 퇴실일 아침에 체크아웃합니다. 퇴실일 당일은 다른 손님이 입실할 수 있어요.'),
+
+      selCheckIn && selCheckOut && !modal && React.createElement('div', {className:'float-bar'},
+        React.createElement('div', {className:'info'},
+          React.createElement('b', null, `${nightsBetween(selCheckIn, selCheckOut)}박`),
+          `${selCheckIn} ~ ${selCheckOut}`
+        ),
+        React.createElement('button', {className:'btn btn-primary book-now', onClick:()=>setModal({type:'book'})}, '예약하기')
+      ),
+
+      modal && modal.type === 'book' && React.createElement(BookModal, {
+        checkIn: selCheckIn, checkOut: selCheckOut, user,
+        onClose: () => setModal(null),
+        onSubmit: async (form) => {
+          const ok = await submitBooking(form);
+          setModal(null);
+          return ok;
+        }
+      }),
+
+      modal && modal.type === 'detail' && React.createElement(DetailModal, {
+        booking: findBooking(modal.dateKey),
+        onClose: () => setModal(null),
+        onCancel: async (booking, password) => {
+          const err = await submitCancel(booking, password);
+          if (!err) setModal(null);
+          return err;
+        }
+      })
+    );
+  }
+
+  function BookModal({ checkIn, checkOut, user, onClose, onSubmit }){
+    const [guests, setGuests] = useState(2);
+    const [password, setPassword] = useState('');
+    const [password2, setPassword2] = useState('');
+    const [err, setErr] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    async function submit(e){
+      e.preventDefault();
+      if (guests < 1) { setErr('인원은 1명 이상이어야 해요.'); return; }
+      if (password.length < 4) { setErr('비밀번호는 4자리 이상으로 설정해 주세요.'); return; }
+      if (password !== password2) { setErr('비밀번호가 서로 일치하지 않아요.'); return; }
+      setErr(''); setBusy(true);
+      await onSubmit({ guests: Number(guests), password });
+      setBusy(false);
+    }
+
+    return React.createElement('div', {className:'overlay', onClick:(e)=>{ if(e.target.classList.contains('overlay')) onClose(); }},
+      React.createElement('div', {className:'modal'},
+        React.createElement('button', {className:'modal-close', onClick:onClose}, '×'),
+        React.createElement('h2', null, '예약하기'),
+        React.createElement('div', {className:'date-sub'}, `입실 ${checkIn} → 퇴실 ${checkOut} (${nightsBetween(checkIn,checkOut)}박)`),
+        err && React.createElement('div', {className:'error-msg'}, err),
+        React.createElement('form', {onSubmit: submit},
+          React.createElement('div', {className:'row2'},
+            React.createElement('div', {className:'field'},
+              React.createElement('label', null, '예약자'),
+              React.createElement('input', {type:'text', value:user.name, disabled:true})
+            ),
+            React.createElement('div', {className:'field'},
+              React.createElement('label', null, '연락처'),
+              React.createElement('input', {type:'text', value:user.phone, disabled:true})
+            )
+          ),
+          React.createElement('div', {className:'field'},
+            React.createElement('label', null, '인원 수'),
+            React.createElement('input', {type:'number', inputMode:'numeric', min:1, value:guests, onChange:e=>setGuests(e.target.value)})
+          ),
+          React.createElement('div', {className:'field'},
+            React.createElement('label', null, '예약 비밀번호'),
+            React.createElement('input', {type:'password', value:password, onChange:e=>setPassword(e.target.value), placeholder:'취소할 때 필요해요'})
+          ),
+          React.createElement('div', {className:'field'},
+            React.createElement('label', null, '비밀번호 확인'),
+            React.createElement('input', {type:'password', value:password2, onChange:e=>setPassword2(e.target.value)}),
+            React.createElement('div', {className:'hint'}, '이 비밀번호는 예약을 취소할 때만 사용돼요. 잊지 않도록 따로 적어 두세요.')
+          ),
+          React.createElement('button', {className:'btn btn-primary', type:'submit', disabled:busy}, busy ? '예약 중…' : '예약 확정하기')
+        )
+      )
+    );
+  }
+
+  function DetailModal({ booking, onClose, onCancel }){
+    const [showCancel, setShowCancel] = useState(false);
+    const [password, setPassword] = useState('');
+    const [err, setErr] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    if (!booking) {
+      return React.createElement('div', {className:'overlay', onClick:onClose},
+        React.createElement('div', {className:'modal', onClick:e=>e.stopPropagation()},
+          React.createElement('button', {className:'modal-close', onClick:onClose}, '×'),
+          React.createElement('h2', null, '예약 정보 없음')
+        )
+      );
+    }
+
+    async function submitCancel(e){
+      e.preventDefault();
+      if (!password) { setErr('비밀번호를 입력해 주세요.'); return; }
+      setBusy(true);
+      const result = await onCancel(booking, password);
+      setBusy(false);
+      if (result) setErr(result);
+    }
+
+    return React.createElement('div', {className:'overlay', onClick:(e)=>{ if(e.target.classList.contains('overlay')) onClose(); }},
+      React.createElement('div', {className:'modal'},
+        React.createElement('button', {className:'modal-close', onClick:onClose}, '×'),
+        React.createElement('h2', null, '예약 완료'),
+        React.createElement('div', {className:'date-sub'}, `입실 ${booking.checkIn} → 퇴실 ${booking.checkOut}`),
+        React.createElement('div', {className:'detail-line'}, React.createElement('span',null,'예약자'), React.createElement('b',null,booking.name)),
+        React.createElement('div', {className:'detail-line'}, React.createElement('span',null,'인원'), React.createElement('b',null,booking.guests + '명')),
+        !showCancel && React.createElement('button', {
+          className:'btn btn-danger', style:{marginTop:18}, onClick:()=>setShowCancel(true)
+        }, '이 예약 취소하기'),
+        showCancel && React.createElement('form', {onSubmit: submitCancel, style:{marginTop:16}},
+          err && React.createElement('div', {className:'error-msg'}, err),
+          React.createElement('div', {className:'field'},
+            React.createElement('label', null, '예약 비밀번호'),
+            React.createElement('input', {type:'password', value:password, onChange:e=>setPassword(e.target.value), autoFocus:true})
+          ),
+          React.createElement('button', {className:'btn btn-danger', type:'submit', disabled:busy}, busy ? '확인 중…' : '취소 확정')
+        )
+      )
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(React.createElement(App));
+})();
+</script>
+</body>
+</html>
